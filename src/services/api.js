@@ -6,6 +6,9 @@ const API_BASE_URL = window.location.hostname === 'localhost' || window.location
   ? 'http://localhost:3001/api'
   : 'https://backend-p6xhhmwid-mauricio-silva-oliveiras-projects.vercel.app/api';
 
+// FORCE REBUILD - API URL CORRECTED
+console.log('API_BASE_URL configured:', API_BASE_URL);
+
 
 // Instância do axios com configurações padrão
 const api = axios.create({
