@@ -6,7 +6,6 @@ const API_BASE_URL = window.location.hostname === 'localhost' || window.location
   ? 'http://localhost:3001/api'
   : 'https://backend-42rxugdfm-mauricio-silva-oliveiras-projects.vercel.app/api';
 
-console.log('🔗 API URL:', API_BASE_URL, '| Hostname:', window.location.hostname);
 
 // Instância do axios com configurações padrão
 const api = axios.create({
@@ -14,6 +13,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: false, // Não usar cookies, apenas JWT token
 });
 
 // Interceptor para adicionar token de autenticação
@@ -23,16 +23,9 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('🚀 Request interceptor:', {
-      url: config.url,
-      method: config.method,
-      headers: config.headers,
-      data: config.data
-    });
     return config;
   },
   (error) => {
-    console.error('❌ Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -40,11 +33,6 @@ api.interceptors.request.use(
 // Interceptor para tratar respostas e erros
 api.interceptors.response.use(
   (response) => {
-    console.log('✅ Response interceptor:', {
-      status: response.status,
-      url: response.config.url,
-      data: response.data
-    });
     return response;
   },
   (error) => {
@@ -66,11 +54,7 @@ api.interceptors.response.use(
 // Serviços de autenticação
 export const authService = {
   async login(email, password) {
-    console.log('🌐 API - Fazendo requisição de login para:', email);
-    console.log('🌐 API - URL completa:', api.defaults.baseURL + '/auth/login');
-    
     const response = await api.post('/auth/login', { email, password });
-    console.log('🌐 API - Resposta recebida:', response.status, response.data);
     return response.data;
   },
 
@@ -80,9 +64,7 @@ export const authService = {
   },
 
   async getProfile() {
-    console.log('🌐 API - Fazendo requisição de perfil');
     const response = await api.get('/auth/me');
-    console.log('🌐 API - Perfil recebido:', response.status, response.data);
     return response.data;
   }
 };
