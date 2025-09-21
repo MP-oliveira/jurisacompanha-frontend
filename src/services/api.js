@@ -1,13 +1,13 @@
 import axios from 'axios';
 
 // Configuração base da API
-// Usar localhost em desenvolvimento, Vercel em produção
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3001/api'
-  : 'https://backend-p6xhhmwid-mauricio-silva-oliveiras-projects.vercel.app/api';
+// Usar variável de ambiente se disponível, senão usar localhost em desenvolvimento, Vercel em produção
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3001/api'
+    : 'https://backend-p6xhhmwid-mauricio-silva-oliveiras-projects.vercel.app/api');
 
-// FORCE REBUILD - API URL CORRECTED
-console.log('API_BASE_URL configured:', API_BASE_URL);
+// API URL CORRECTED - BACKEND P6XHHMWID
 
 
 // Instância do axios com configurações padrão
