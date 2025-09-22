@@ -5,9 +5,9 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3001/api'
-    : 'https://backend-p6xhhmwid-mauricio-silva-oliveiras-projects.vercel.app/api');
+    : 'https://backend-efbk7pkyq-mauricio-silva-oliveiras-projects.vercel.app/api');
 
-// API URL CORRECTED - BACKEND P6XHHMWID
+// API URL CORRECTED - BACKEND P6XHHMWID - FORCE REBUILD
 
 
 // Instância do axios com configurações padrão
