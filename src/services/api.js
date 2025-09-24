@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Configuração base da API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.DEV ? 'http://localhost:3001/api' : 'https://jurisacompanha-backend.vercel.app/api');
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://jurisacompanha-backend.vercel.app/api';
+
 
 // Debug: Log da URL da API
 console.log('🔧 API_BASE_URL:', API_BASE_URL);
@@ -59,8 +59,14 @@ api.interceptors.response.use(
 // Serviços de autenticação
 export const authService = {
   async login(email, password) {
-    const response = await api.post('/auth/login', { email, password });
-    return response.data;
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      console.log('✅ Login response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      throw error;
+    }
   },
 
   async register(userData) {
