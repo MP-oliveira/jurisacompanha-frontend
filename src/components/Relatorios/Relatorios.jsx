@@ -12,36 +12,43 @@ import {
   AlertTriangle,
   Filter,
   RefreshCw,
-  Eye,
-  Plus
+  Plus,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { relatorioService } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import RelatorioExport from '../RelatorioExport/RelatorioExport';
 import './Relatorios.css';
 
 const Relatorios = () => {
+  const { isAuthenticated, user } = useAuth();
   const [relatorios, setRelatorios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('todos');
   const [selectedType, setSelectedType] = useState('todos');
   const [showFilters, setShowFilters] = useState(false);
-  const [showNewReportModal, setShowNewReportModal] = useState(false);
-  const [newReport, setNewReport] = useState({
-    tipo: 'processos',
-    titulo: '',
-    descricao: '',
-    periodo: new Date().toISOString().slice(0, 7) // YYYY-MM
-  });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedRelatorio, setSelectedRelatorio] = useState(null);
 
   // Buscar relatórios do backend
   useEffect(() => {
     const fetchRelatorios = async () => {
+      if (!isAuthenticated || !user) {
+        console.log('👤 Usuário não autenticado - pulando busca de relatórios');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
+        console.log('📊 Relatórios: Buscando relatórios para o usuário', user.email);
         const response = await relatorioService.getAll({
           tipo: selectedType !== 'todos' ? selectedType : undefined,
           status: 'todos'
         });
+        
+        // Usar dados reais do backend
         setRelatorios(response.relatorios || []);
       } catch (error) {
         console.error('Erro ao buscar relatórios:', error);
@@ -52,7 +59,7 @@ const Relatorios = () => {
     };
 
     fetchRelatorios();
-  }, [selectedType, selectedPeriod]);
+  }, [selectedType, selectedPeriod, isAuthenticated, user]);
 
   const filteredRelatorios = relatorios.filter(relatorio => {
     const matchesType = selectedType === 'todos' || relatorio.tipo === selectedType;
@@ -61,30 +68,45 @@ const Relatorios = () => {
     return matchesType && matchesPeriod;
   });
 
-  const handleGerarRelatorio = () => {
-    setShowNewReportModal(true);
-  };
+  const handleGerarRelatorio = async () => {
+    const agora = new Date();
+    const periodo = agora.toISOString().slice(0, 7); // YYYY-MM
+    const mesNome = agora.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    
+    // Gerar relatório automático inteligente
+    const reportData = {
+      tipo: 'processos',
+      titulo: `Relatório Mensal - ${mesNome}`,
+      descricao: `Relatório automático com análise completa de processos, prazos e alertas do mês de ${mesNome.toLowerCase()}`,
+      periodo: periodo
+    };
 
-  const handleCreateReport = async () => {
     try {
       setLoading(true);
-      await relatorioService.create(newReport);
-      setShowNewReportModal(false);
-      setNewReport({
-        tipo: 'processos',
-        titulo: '',
-        descricao: '',
-        periodo: new Date().toISOString().slice(0, 7)
-      });
+      console.log('📊 Gerando relatório automático:', reportData);
+      const result = await relatorioService.create(reportData);
+      console.log('✅ Relatório gerado com sucesso:', result);
+      
       // Recarregar relatórios
-      const response = await relatorioService.getAll();
+      const response = await relatorioService.getAll({
+        tipo: selectedType !== 'todos' ? selectedType : undefined,
+        status: 'todos'
+      });
       setRelatorios(response.relatorios || []);
+      
+      // Atualizar estatísticas
+      const statsResponse = await relatorioService.getStats();
+      setStats(statsResponse || { total: 0, concluidos: 0, processando: 0, erro: 0 });
+      
     } catch (error) {
-      console.error('Erro ao criar relatório:', error);
+      console.error('❌ Erro ao gerar relatório:', error);
+      alert('Erro ao gerar relatório: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
   };
+
+
 
   const handleExportSuccess = (relatorioId, type) => {
     // Aqui você pode adicionar notificação de sucesso
@@ -95,9 +117,35 @@ const Relatorios = () => {
     // Aqui você pode adicionar notificação de erro
   };
 
-  const handleVisualizar = (relatorioId) => {
-    // Implementar visualização quando necessário
+  const handleDeleteRelatorio = (relatorio) => {
+    setSelectedRelatorio(relatorio);
+    setShowDeleteModal(true);
   };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedRelatorio) return;
+
+    try {
+      setLoading(true);
+      await relatorioService.delete(selectedRelatorio.id);
+      setShowDeleteModal(false);
+      setSelectedRelatorio(null);
+      // Recarregar relatórios
+      const response = await relatorioService.getAll({
+        tipo: selectedType !== 'todos' ? selectedType : undefined,
+        status: 'todos'
+      });
+      setRelatorios(response.relatorios || []);
+      // Atualizar estatísticas
+      const statsResponse = await relatorioService.getStats();
+      setStats(statsResponse || { total: 0, concluidos: 0, processando: 0, erro: 0 });
+    } catch (error) {
+      console.error('Erro ao deletar relatório:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleRefresh = async () => {
     try {
@@ -124,16 +172,24 @@ const Relatorios = () => {
   // Buscar estatísticas do backend
   useEffect(() => {
     const fetchStats = async () => {
+      if (!isAuthenticated || !user) {
+        return;
+      }
+
       try {
         const response = await relatorioService.getStats();
-        setStats(response);
+        
+        // Usar dados reais do backend
+        setStats(response || { total: 0, concluidos: 0, processando: 0, erro: 0 });
       } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
+        // Em caso de erro, zerar estatísticas
+        setStats({ total: 0, concluidos: 0, processando: 0, erro: 0 });
       }
     };
 
     fetchStats();
-  }, []);
+  }, [isAuthenticated, user]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -425,13 +481,12 @@ const Relatorios = () => {
                 )}
 
                 <div className="relatorio-card-actions">
-                  <button 
-                    className="btn btn-sm btn-outline"
-                    onClick={() => handleVisualizar(relatorio.id)}
-                    disabled={relatorio.status !== 'concluido'}
+                  <button
+                    className="relatorio-card-action-btn relatorio-card-action-delete"
+                    onClick={() => handleDeleteRelatorio(relatorio)}
+                    title="Excluir relatório"
                   >
-                    <Eye size={16} />
-                    Visualizar
+                    <Trash2 size={16} />
                   </button>
                   <RelatorioExport 
                     relatorio={relatorio}
@@ -446,83 +501,42 @@ const Relatorios = () => {
         )}
       </div>
 
-      {/* Modal para Novo Relatório */}
-      {showNewReportModal && (
-        <div className="modal-overlay" onClick={() => setShowNewReportModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      {/* Modal de Confirmação para Deletar */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-content modal-confirm" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2 className="modal-title">Gerar Novo Relatório</h2>
+              <h2 className="modal-title">Confirmar Exclusão</h2>
               <button 
                 className="modal-close"
-                onClick={() => setShowNewReportModal(false)}
+                onClick={() => setShowDeleteModal(false)}
               >
                 <XCircle size={24} />
               </button>
             </div>
             
             <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label required">Tipo de Relatório</label>
-                <select
-                  className="form-input"
-                  value={newReport.tipo}
-                  onChange={(e) => setNewReport({...newReport, tipo: e.target.value})}
-                >
-                  <option value="processos">Processos</option>
-                  <option value="prazos">Prazos</option>
-                  <option value="alertas">Alertas</option>
-                  <option value="consultas">Consultas</option>
-                  <option value="usuarios">Usuários</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label required">Título</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={newReport.titulo}
-                  onChange={(e) => setNewReport({...newReport, titulo: e.target.value})}
-                  placeholder="Ex: Relatório de Processos por Status"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Descrição</label>
-                <textarea
-                  className="form-input"
-                  rows="3"
-                  value={newReport.descricao}
-                  onChange={(e) => setNewReport({...newReport, descricao: e.target.value})}
-                  placeholder="Descrição do relatório..."
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label required">Período</label>
-                <input
-                  type="month"
-                  className="form-input"
-                  value={newReport.periodo}
-                  onChange={(e) => setNewReport({...newReport, periodo: e.target.value})}
-                />
+              <div className="confirm-message">
+                <AlertTriangle size={48} className="confirm-icon" />
+                <p>Tem certeza que deseja deletar o relatório:</p>
+                <strong>"{selectedRelatorio?.titulo}"</strong>
+                <p className="confirm-warning">Esta ação não pode ser desfeita.</p>
               </div>
             </div>
 
             <div className="modal-actions">
               <button 
                 className="btn btn-secondary" 
-                onClick={() => setShowNewReportModal(false)}
+                onClick={() => setShowDeleteModal(false)}
               >
                 Cancelar
               </button>
               <button 
-                className="btn btn-primary" 
-                onClick={handleCreateReport}
-                disabled={!newReport.titulo || !newReport.periodo}
+                className="btn btn-danger" 
+                onClick={handleConfirmDelete}
               >
-                <Plus size={16} />
-                Gerar Relatório
+                <Trash2 size={16} />
+                Sim, Deletar
               </button>
             </div>
           </div>

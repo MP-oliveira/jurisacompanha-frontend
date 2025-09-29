@@ -24,11 +24,36 @@ export const AuthProvider = ({ children }) => {
       
       if (savedToken && savedUser) {
         try {
-          // Usar dados salvos sem verificar no servidor por enquanto
-          setUser(JSON.parse(savedUser));
-          setToken(savedToken);
+          // Verificar se o token não está expirado
+          const tokenParts = savedToken.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            const now = Math.floor(Date.now() / 1000);
+            
+            if (payload.exp > now) {
+              // Token válido
+              setUser(JSON.parse(savedUser));
+              setToken(savedToken);
+              console.log('✅ Token válido carregado do localStorage');
+            } else {
+              // Token expirado
+              console.warn('⚠️ Token expirado encontrado no localStorage');
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              setUser(null);
+              setToken(null);
+            }
+          } else {
+            // Token malformado
+            console.warn('⚠️ Token malformado encontrado no localStorage');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+            setToken(null);
+          }
         } catch (error) {
           // Limpar dados inválidos
+          console.error('❌ Erro ao verificar token:', error);
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setUser(null);
@@ -48,15 +73,44 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await authService.login(email, password);
-      const { token: newToken, user: newUser } = response;
       
-      setToken(newToken);
-      setUser(newUser);
+      console.log('🔍 AuthContext - Response completa:', response);
+      console.log('🔍 AuthContext - Token:', response.token);
+      console.log('🔍 AuthContext - User:', response.user);
       
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      return response;
+      if (response.token && response.user) {
+        // Verificar formato do token
+        console.log('🔍 AuthContext - Token type:', typeof response.token);
+        console.log('🔍 AuthContext - Token length:', response.token.length);
+        console.log('🔍 AuthContext - Token starts with:', response.token.substring(0, 20) + '...');
+        
+        // Decodificar o token para debug (sem verificar assinatura)
+        try {
+          const tokenParts = response.token.split('.');
+          console.log('🔍 AuthContext - Token parts count:', tokenParts.length);
+          console.log('🔍 AuthContext - Token parts:', tokenParts.map((part, index) => `${index}: ${part.substring(0, 20)}...`));
+          
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log('🔍 AuthContext - Token payload:', payload);
+        } catch (decodeError) {
+          console.error('❌ AuthContext - Erro ao decodificar token:', decodeError);
+          console.error('❌ AuthContext - Token problemático:', response.token);
+        }
+
+        setToken(response.token);
+        setUser(response.user);
+        
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        
+        console.log('✅ AuthContext - Token e user salvos no localStorage');
+        return response;
+      } else {
+        console.error('❌ AuthContext - Response não contém token ou user');
+        throw new Error('Falha na autenticação');
+      }
     } catch (error) {
+      console.error('❌ AuthContext - Erro no login:', error);
       throw error;
     }
   };

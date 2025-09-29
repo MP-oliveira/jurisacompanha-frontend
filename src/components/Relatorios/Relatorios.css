@@ -368,9 +368,46 @@
 /* ===== AÇÕES ===== */
 .relatorio-card-actions {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
   justify-content: flex-end;
   margin-top: auto;
+  flex-shrink: 0;
+}
+
+.relatorio-card-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background-color: transparent;
+}
+
+.relatorio-card-action-edit {
+  color: var(--primary-600);
+}
+
+.relatorio-card-action-edit:hover {
+  background-color: var(--primary-50);
+  color: var(--primary-700);
+}
+
+.relatorio-card-action-delete {
+  color: var(--error-600);
+}
+
+.relatorio-card-action-delete:hover {
+  background-color: var(--error-50);
+  color: var(--error-700);
+}
+
+.relatorio-card-action-btn:focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
 }
 
 /* ===== ESTADO VAZIO ===== */
@@ -527,11 +564,7 @@
   }
   
   .relatorio-card-actions {
-    flex-direction: column;
-  }
-  
-  .relatorio-card-actions .btn {
-    width: 100%;
+    align-self: flex-end;
   }
   
   .relatorios-empty {
@@ -586,6 +619,43 @@
 .relatorios-filters-toggle:focus-visible {
   outline: 2px solid var(--primary-500);
   outline-offset: 2px;
+}
+
+/* ===== MODAL DE CONFIRMAÇÃO ===== */
+.modal-confirm {
+  max-width: 400px;
+}
+
+.confirm-message {
+  text-align: center;
+  padding: var(--spacing-lg) 0;
+}
+
+.confirm-icon {
+  color: var(--warning-500);
+  margin-bottom: var(--spacing-md);
+}
+
+.confirm-message p {
+  margin: var(--spacing-sm) 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.confirm-message strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  display: block;
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-sm);
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.confirm-warning {
+  font-size: 0.875rem;
+  color: var(--warning-600);
+  font-weight: 500;
 }
 
 /* ===== ACESSIBILIDADE ===== */
